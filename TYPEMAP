@@ -1,0 +1,39 @@
+TYPEMAP
+LPCTSTR                   T_PV
+LPCSTR                    T_PV
+LPTSTR                    T_PV
+DWORD                     T_IV
+UINT                      T_IV
+BOOL                      T_IV
+HBITMAP                   T_HANDLE
+HDC                       T_HANDLE
+HFONT                     T_HANDLE
+HIMAGELIST                T_HANDLE
+HWND                      T_HANDLE
+CMFCWnd*                  T_MFCWND
+COLORREF                  T_COLOR
+
+################################################################################
+INPUT
+T_HANDLE
+    if(SvROK($arg)) {
+        if(hv_fetch((HV*)SvRV($arg), \"-handle\", 7, 0) != NULL)
+            $var = ($type) SvIV(*(hv_fetch((HV*)SvRV($arg), \"-handle\", 7, 0)));
+        else
+            $var = NULL;
+    } else
+        $var = ($type) SvIV($arg);
+
+T_MFCWND
+    $var = ($type) SvIV(*(hv_fetch((HV*)SvRV($arg), \"-CMFCWnd\", 8, 0)));
+
+T_COLOR
+    $var = SvCOLORREF(aTHX_ $arg);
+
+################################################################################
+OUTPUT
+T_HANDLE
+    sv_setiv($arg, (IV) $var);
+T_COLOR
+    sv_setiv($arg, (IV) $var);
+

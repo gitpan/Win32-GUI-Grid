@@ -1,0 +1,33 @@
+
+Revision history for Perl extension Win32::GUI::Grid.
+
+0.05  07/09/2003
+        - Add SetCellEditable method.
+        - Add List cell editing.
+        - New event _ChangedEdit for COMBO and LIST edit control when select change in list.
+
+0.04  07/08/2003
+        - Correct -heigth option.
+        - In InsertColumn, set last parameter optional.
+        - Add Column Perl Sort method.
+
+0.03  03/06/2003
+        - Correct Abnormal terminaison when multiple grid instance
+
+0.02  03/06/2003
+        - Correct crash when destroy grid during cell edit.
+        - Virtual Mode support.
+        - New cell editing support.
+            + Numeric
+            + Date
+            + Time
+            + Check
+            + Combo
+        - Add Perl Sort method.
+
+0.01  28/05/2003
+        - First build Win32::GUI::Grid
+        - Use MFC Grid control 2.24
+
+TODO
+   - Printing support (???)
