@@ -26,10 +26,12 @@
 //
 
 #include ".\MFCGrid\GridCtrl.h"
+#include ".\MFCGrid\GridCell.h"
 #include ".\MFCGrid\GridCellNumeric.h"
 #include ".\MFCGrid\GridCellDateTime.h"
 #include ".\MFCGrid\GridCellCheck.h"
 #include ".\MFCGrid\GridCellCombo.h"
+#include ".\MFCGrid\GridCellUrl.h"
 
 //
 // Perl Include
@@ -257,6 +259,8 @@ int DoEvent_TwoLongsAndString(const char *Name, long argone, long argtwo, const 
 #define GVIT_CHECK    4
 #define GVIT_COMBO    5
 #define GVIT_LIST     6
+#define GVIT_URL      7
+#define GVIT_DATECAL  8
 
 CRuntimeClass*
 GetRuntimeClassFromType (int iType)
@@ -277,6 +281,10 @@ GetRuntimeClassFromType (int iType)
     return RUNTIME_CLASS(CGridCellCombo);
   case GVIT_LIST :
     return RUNTIME_CLASS(CGridCellList);
+  case GVIT_URL :
+    return RUNTIME_CLASS(CGridCellURL);
+  case GVIT_DATECAL :
+    return RUNTIME_CLASS(CGridCellDateCal);
   }
   return NULL;
 }
@@ -387,6 +395,8 @@ int constant (char * name, int arg)
       CONSTANT(GVIT_CHECK);
       CONSTANT(GVIT_COMBO);
       CONSTANT(GVIT_LIST);
+      CONSTANT(GVIT_URL);
+      CONSTANT(GVIT_DATECAL);
       break;
     }
     break;
@@ -838,6 +848,8 @@ void
 _Initialise()
 CODE:
   AfxWinInit(GetModuleHandle(NULL), NULL, _T(""), 0);
+  OleInitialize(NULL);
+  ::setlocale (LC_ALL, "");
 
   #
   # _UnInitialise (internal)
@@ -2652,7 +2664,7 @@ CODE:
 OUTPUT:
   RETVAL
 
-  # Option CGridCombo
+  # Option CGridCombo/CGridCellURL/CGridCellCheck
 
 BOOL
 SetCellOptions(object, nRow, nCol, ...)
@@ -2662,7 +2674,8 @@ SetCellOptions(object, nRow, nCol, ...)
 PREINIT:
   CGridCellBase* pCell;
   CStringArray csa;
-  int i;
+  int i, next_i;
+  char *option;
 CODE:
   pCell = object->GetCell(nRow, nCol);
   if (pCell && pCell->IsKindOf(RUNTIME_CLASS(CGridCellCombo)))
@@ -2684,6 +2697,36 @@ CODE:
 
     ((CGridCellCombo*)pCell)->SetOptions(csa);
     RETVAL = TRUE;
+  }
+  else if (pCell && pCell->IsKindOf(RUNTIME_CLASS(CGridCellURL)))
+  {
+    next_i = -1;
+    for(i = 3; i < items; i++) {
+      if (next_i == -1) {
+        option = SvPV_nolen(ST(i));
+        if (strcmp(option, "-autolaunch") == 0) {
+          next_i = i + 1;
+          ((CGridCellURL*)pCell)->SetAutoLaunchUrl((LONG) SvIV(ST(next_i)));
+        }
+      }
+      else
+        next_i = -1;
+    }
+  }
+  else if (pCell && pCell->IsKindOf(RUNTIME_CLASS(CGridCellCheck)))
+  {
+    next_i = -1;
+    for(i = 3; i < items; i++) {
+      if (next_i == -1) {
+        option = SvPV_nolen(ST(i));
+        if (strcmp(option, "-checked") == 0) {
+          next_i = i + 1;
+          ((CGridCellCheck*)pCell)->SetCheck((LONG) SvIV(ST(next_i)));
+        }
+      }
+      else
+        next_i = -1;
+    }
   }
   else
     RETVAL = FALSE;

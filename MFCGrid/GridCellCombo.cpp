@@ -265,7 +265,7 @@ int CInPlaceList::GetCorrectDropWidth()
     }
     
     // Add margin space to the calculations
-    nWidth += dc.GetTextExtent("0").cx;
+    nWidth += dc.GetTextExtent(_T("0")).cx;
 
     dc.RestoreDC(nSave);
 
@@ -450,9 +450,11 @@ CWnd* CGridCellCombo::GetEditWnd() const
 
 CSize CGridCellCombo::GetCellExtent(CDC* pDC)
 {
-    CSize sizeScroll(GetSystemMetrics(SM_CXVSCROLL), GetSystemMetrics(SM_CYHSCROLL));
-
-	return CGridCell::GetCellExtent(pDC) + sizeScroll;
+    CSize sizeScroll(GetSystemMetrics(SM_CXVSCROLL), GetSystemMetrics(SM_CYHSCROLL));  //Yogurt $$LR$$
+    CSize sizeCell  (CGridCell::GetCellExtent(pDC));
+    sizeCell.cx += sizeScroll.cx;
+    sizeCell.cy = max(sizeCell.cy,sizeScroll.cy);
+    return sizeCell;	
 }
 
 // Cancel the editing.
@@ -506,7 +508,7 @@ BOOL CGridCellCombo::Draw(CDC* pDC, int nRow, int nCol, CRect rect,  BOOL bErase
 }
 
 // For setting the strings that will be displayed in the drop list
-void CGridCellCombo::SetOptions(CStringArray& ar)
+void CGridCellCombo::SetOptions(const CStringArray& ar)
 { 
     m_Strings.RemoveAll();
     for (int i = 0; i < ar.GetSize(); i++)

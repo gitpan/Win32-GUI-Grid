@@ -73,10 +73,12 @@ require AutoLoader;
   GVIT_DEFAULT
   GVIT_NUMERIC
   GVIT_DATE
+  GVIT_DATECAL
   GVIT_TIME
   GVIT_CHECK
   GVIT_COMBO
   GVIT_LIST
+  GVIT_URL
 
   DT_TOP
   DT_LEFT
@@ -101,7 +103,7 @@ require AutoLoader;
   DT_WORD_ELLIPSIS
 );
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 sub AUTOLOAD {
     # This AUTOLOAD is used to 'autoload' constants from the constant()
@@ -749,10 +751,12 @@ __END__
 
     GVIT_NUMERIC = Numeric control edit
     GVIT_DATE    = Date control
+    GVIT_DATECAL = Date control with calendar control
     GVIT_TIME    = Time control
     GVIT_CHECK   = Check Box
     GVIT_COMBO   = Combo Box
     GVIT_LIST    = List Box
+	GVIT_URL     = Url control
 
 =item C<SetCellType> (nRow, nCol, iType = GVIT_DEFAULT)
 
@@ -762,10 +766,12 @@ __END__
 
     GVIT_NUMERIC = Numeric control edit
     GVIT_DATE    = Date control
+    GVIT_DATECAL = Date control with calendar control
     GVIT_TIME    = Time control
     GVIT_CHECK   = Check Box
     GVIT_COMBO   = Combo Box
     GVIT_LIST    = List Box
+	GVIT_URL     = Url control
 
 =item C<SetCellCheck> (nRow, nCol, bChecked = TRUE)
 
@@ -777,7 +783,13 @@ __END__
 
 =item C<SetCellOtpions> (nRow, nCol, ...)
 
-  Set combo box options. (GVIT_COMBO Only)
+  Set cells options. 
+  For GVIT_COMBO, GVIT_LIST :
+	An arrar reference with liste of string value (["Option1","Option2"])
+  For GVIT_CHECK :
+	-checked => 0/1 : Set check.
+  For GVIT_URL :
+	-autolaunch => 0/1 : Set autolauch mode (default : 1).
 
 =head3 Cell Attribut
 
@@ -1216,7 +1228,7 @@ __END__
 
 =head1 AUTHOR
 
-  Laurent Rocher (rocherl@club-internet.fr)
+  Laurent Rocher (lrocher@cpan.org)
   HomePage : http://perso.club-internet.fr/rocherl/Win32GUI.html
 
 =head1 SEE ALSO

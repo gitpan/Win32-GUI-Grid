@@ -1,5 +1,5 @@
 #! perl -w
-# 
+#
 # Test Basic Grid method
 #
 use strict;

@@ -1,6 +1,13 @@
 
 Revision history for Perl extension Win32::GUI::Grid.
 
+0.06  14/02/2004
+	- Fix Clipboard error (Ctrl+C) [Thank to Andrew St. Denis]
+	- Fix some Grid draw problem
+	- Add WM_PRINTCLIENT support for new Win32::GUI -noflicker option.
+	- New Cell Type (Calendar, URL)
+	- SetCellOptions : New options
+
 0.05  07/09/2003
         - Add SetCellEditable method.
         - Add List cell editing.

@@ -18,6 +18,7 @@ OutDir=.\Lib
 ALL : "$(OUTDIR)\MFCGrid.lib"
 
 CLEAN :
+		-@erase "$(INTDIR)\GridCellUrl.obj"
         -@erase "$(INTDIR)\GridCellNumeric.obj"
         -@erase "$(INTDIR)\GridCellDateTime.obj"
         -@erase "$(INTDIR)\GridCellCheck.obj"
@@ -56,6 +57,7 @@ LIB32_OBJS= \
         "$(INTDIR)\GridCellBase.obj" \
         "$(INTDIR)\GridCell.obj" \
         "$(INTDIR)\GridCellNumeric.obj" \
+		"$(INTDIR)\GridCellUrl.obj" \
         "$(INTDIR)\GridCellDateTime.obj" \
         "$(INTDIR)\GridCellCheck.obj" \
         "$(INTDIR)\GridCellCombo.obj" \
@@ -189,6 +191,13 @@ GridCellCombo.cpp : \
         "GridCtrl.h"\
         "StdAfx.h"
 
+GridCellUrl.cpp : \
+        "GridCellUrl.h"\
+        "GridCell.h"\
+        "GridCellBase.h"\
+        "GridCtrl.h"\
+        "StdAfx.h"
+
 SOURCE=GridCell.cpp
 
 "$(INTDIR)\GridCell.obj" : $(SOURCE) "$(INTDIR)"
@@ -242,4 +251,9 @@ SOURCE=GridCellCheck.cpp
 SOURCE=GridCellCombo.cpp
 
 "$(INTDIR)\GridCellCombo.obj" : $(SOURCE) "$(INTDIR)"
+        $(CPP) $(CPP_PROJ) $(SOURCE)
+
+SOURCE=GridCellUrl.cpp
+
+"$(INTDIR)\GridCellUrl.obj" : $(SOURCE) "$(INTDIR)"
         $(CPP) $(CPP_PROJ) $(SOURCE)

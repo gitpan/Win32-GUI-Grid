@@ -12,7 +12,7 @@ WriteMakefile(
     'MYEXTLIB'     => './MFCGrid/Lib/MFCGrid.lib',
      ($] ge '5.005')
      ? (
-      'AUTHOR'   => 'ROCHER Laurent (rocherl@club-internet.fr)',
+      'AUTHOR'   => 'ROCHER Laurent (lrocher@cpan.org)',
       'ABSTRACT' => 'Add a Grid control to Win32::GUI (MFC Grid from CodeProject.com)',
      )
      : (),

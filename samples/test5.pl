@@ -1,6 +1,7 @@
 #! perl -w
 #
-# Test Basic Grid method
+# - Custom Cell Type
+# - Sort function
 #
 use strict;
 use Win32::GUI;
@@ -51,6 +52,10 @@ for my $row (0..$Grid->GetRows()) {
 $Grid->SetCellText(1, 1, "");
 $Grid->SetCellType(1, 1, GVIT_DATE);
 
+# Set Date edit control in cell (1,1)
+$Grid->SetCellText(2, 1, "");
+$Grid->SetCellType(2, 1, GVIT_DATECAL);
+
 # Set Time edit control in cell (1,2)
 $Grid->SetCellText(1, 2, "");
 $Grid->SetCellType(1, 2, GVIT_TIME);
@@ -71,8 +76,16 @@ $Grid->SetCellText(1, 5, "");
 $Grid->SetCellType(1, 5, GVIT_LIST);
 $Grid->SetCellOptions(1, 5, ["Option 1", "Option 2", "Option 3"]);
 
-# Set uneditable cell (2,1)
-$Grid->SetCellEditable(2, 1, 0);
+# Set Url control in cell (1,6)
+$Grid->SetCellText(1, 6, "www.perl.com");
+$Grid->SetCellType(1, 6, GVIT_URL);
+$Grid->SetCellOptions(1, 6, -autolaunch => 0);
+
+# Set Url control in cell (2,6)
+$Grid->SetCellText(2, 6, "www.perl.com");
+$Grid->SetCellType(2, 6, GVIT_URL);
+# Set uneditable cell (2,6)
+$Grid->SetCellEditable(2, 6, 0);
 
 # Sort Numeric reverse order  (Method 1)
 # $Grid->SortNumericCells(5, 0);
@@ -80,7 +93,7 @@ $Grid->SetCellEditable(2, 1, 0);
 # $Grid->SortCells(5, 0, sub { my ($e1, $e2) = @_; return (int($e1) - int ($e2)); } );
 # Sort Numeric reverse order (Method 3)
 # $Grid->SetSortFunction (sub { my ($e1, $e2) = @_; return (int($e1) - int ($e2)); } );
-# $Grid->SortCells(6, 0);
+# $Grid->SortCells(7, 0);
 # $Grid->SetSortFunction (); # remove sort method
 
 # Resize Grid Cell

@@ -53,7 +53,7 @@ public:
 
 // CGridCellCombo specific calls
 public:
-    void  SetOptions(CStringArray& ar);
+    void  SetOptions(const CStringArray& ar);
     void  SetStyle(DWORD dwStyle)           { m_dwStyle = dwStyle; }
     DWORD GetStyle()                        { return m_dwStyle;    }
 

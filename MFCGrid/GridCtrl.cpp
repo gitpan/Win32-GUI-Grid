@@ -552,11 +552,18 @@ BEGIN_MESSAGE_MAP(CGridCtrl, CWnd)
     ON_MESSAGE(WM_GETFONT, OnGetFont)
     ON_MESSAGE(WM_IME_CHAR, OnImeChar)
     ON_NOTIFY(GVN_ENDLABELEDIT, IDC_INPLACE_CONTROL, OnEndInPlaceEdit)
+    ON_MESSAGE(WM_PRINTCLIENT, OnCustomPrint)
 END_MESSAGE_MAP()
 
 
 /////////////////////////////////////////////////////////////////////////////
 // CGridCtrl message handlers
+
+LRESULT CGridCtrl::OnCustomPrint(WPARAM wParam, LPARAM /*lParam*/)
+{   
+    OnDraw(CDC::FromHandle((HDC) wParam));
+    return 0;
+}
 
 void CGridCtrl::OnPaint()
 {
@@ -1976,18 +1983,18 @@ void CGridCtrl::SetSelectedRange(int nMinRow, int nMinCol, int nMaxRow, int nMax
 {
     if (!m_bEnableSelection)
         return;
-
-        CWaitCursor wait; // Thomas Haase
-
+    
+    CWaitCursor wait; // Thomas Haase
+    
     CDC* pDC = NULL;
     if (bForceRepaint)
         pDC = GetDC();
-
-        // Only redraw visible cells
+    
+    // Only redraw visible cells
     CCellRange VisCellRange;
-        if (IsWindow(GetSafeHwnd()))
-                VisCellRange = GetVisibleNonFixedCellRange();
-
+    if (IsWindow(GetSafeHwnd()))
+        VisCellRange = GetVisibleNonFixedCellRange();
+    
     // EFW - Bug fix - Don't allow selection of fixed rows
     if(nMinRow >= 0 && nMinRow < GetFixedRowCount())
         nMinRow = GetFixedRowCount();
@@ -1997,51 +2004,51 @@ void CGridCtrl::SetSelectedRange(int nMinRow, int nMinCol, int nMaxRow, int nMax
         nMinCol = GetFixedColumnCount();
     if(nMaxCol >= 0 && nMaxCol < GetFixedColumnCount())
         nMaxCol = GetFixedColumnCount();
-
+    
     // If we are selecting cells, then first clear out the list of currently selected cells, then
     if (bSelectCells)
     {
         POSITION pos;
-
+        
         // Unselect all previously selected cells
         for (pos = m_SelectedCellMap.GetStartPosition(); pos != NULL; )
         {
             DWORD key;
             CCellID cell;
             m_SelectedCellMap.GetNextAssoc(pos, key, (CCellID&)cell);
-
+            
             // Reset the selection flag on the cell
             if (IsValid(cell))
             {
                 // This will remove the cell from the m_SelectedCellMap map
                 SetItemState(cell.row, cell.col,
                     GetItemState(cell.row, cell.col) & ~GVIS_SELECTED);
-
+                
                 // If this is to be reselected, continue on past the redraw
                 if (nMinRow <= cell.row && cell.row <= nMaxRow &&
                     nMinCol <= cell.col && cell.col <= nMaxCol)
                     continue;
-
-                                if ( VisCellRange.IsValid() && VisCellRange.InRange( cell ) )
-                                {
-                                        if (bForceRepaint && pDC)                    // Redraw NOW
-                                                RedrawCell(cell.row, cell.col, pDC);
-                                        else
-                                                InvalidateCellRect(cell);                // Redraw at leisure
-                                }
+                
+                if ( VisCellRange.IsValid() && VisCellRange.InRange( cell ) )
+                {
+                    if (bForceRepaint && pDC)                    // Redraw NOW
+                        RedrawCell(cell.row, cell.col, pDC);
+                    else
+                        InvalidateCellRect(cell);                // Redraw at leisure
+                }
             }
             else
             {
                 m_SelectedCellMap.RemoveKey( key);  // if it's not valid, get rid of it!
             }
         }
-
+        
         // if we are selecting cells, and there are previous selected cells to be retained
         // (eg Ctrl is being held down) then copy them to the newly created list, and mark
         // all these cells as selected
         // Note that if we are list mode, single row selection, then we won't be adding
         // the previous cells. Only the current row of cells will be added (see below)
-        if (!GetSingleRowSelection() &&
+        if ( !(GetSingleRowSelection()||GetSingleColSelection()) &&         // Thomas Haase $$LR$$
             nMinRow >= 0 && nMinCol >= 0 && nMaxRow >= 0 && nMaxCol >= 0)
         {
             for (pos = m_PrevSelectedCellMap.GetStartPosition(); pos != NULL; /* nothing */)
@@ -2049,27 +2056,27 @@ void CGridCtrl::SetSelectedRange(int nMinRow, int nMinCol, int nMaxRow, int nMax
                 DWORD key;
                 CCellID cell;
                 m_PrevSelectedCellMap.GetNextAssoc(pos, key, (CCellID&)cell);
-
+                
                 if (!IsValid(cell))
                     continue;
-
+                
                 int nState = GetItemState(cell.row, cell.col);
-
+                
                 // Set state as Selected. This will add the cell to m_SelectedCellMap
                 SetItemState(cell.row, cell.col, nState | GVIS_SELECTED);
-
-                                if ( VisCellRange.IsValid() && VisCellRange.InRange( cell ) )
-                                {
-                                        // Redraw (immediately or at leisure)
-                                        if (bForceRepaint && pDC)
-                                            RedrawCell(cell.row, cell.col, pDC);
-                                        else
-                                            InvalidateCellRect(cell);
-                                }
+                
+                if ( VisCellRange.IsValid() && VisCellRange.InRange( cell ) )
+                {
+                    // Redraw (immediately or at leisure)
+                    if (bForceRepaint && pDC)
+                        RedrawCell(cell.row, cell.col, pDC);
+                    else
+                        InvalidateCellRect(cell);
+                }
             }
         }
     }
-
+    
     // Now select/deselect all cells in the cell range specified. If selecting, and the cell
     // has already been marked as selected (above) then ignore it. If we are deselecting and
     // the cell isn't selected, then ignore
@@ -2083,25 +2090,25 @@ void CGridCtrl::SetSelectedRange(int nMinRow, int nMinCol, int nMaxRow, int nMax
                 BOOL bCellSelected = IsCellSelected(row, col);
                 if (bSelectCells == bCellSelected)
                     continue;    // Already selected or deselected - ignore
-
+                
                 // Set the selected state. This will add/remove the cell to m_SelectedCellMap
                 if (bSelectCells)
                     SetItemState(row, col, GetItemState(row, col) | GVIS_SELECTED);
                 else
                     SetItemState(row, col, GetItemState(row, col) & ~GVIS_SELECTED);
-
-                                if ( VisCellRange.IsValid() && VisCellRange.InRange(row, col) )
-                                {
-                        // Redraw (immediately or at leisure)
-                        if (bForceRepaint && pDC)
-                            RedrawCell(row, col, pDC);
-                        else
-                            InvalidateCellRect(row, col);
-                                }
+                
+                if ( VisCellRange.IsValid() && VisCellRange.InRange(row, col) )
+                {
+                    // Redraw (immediately or at leisure)
+                    if (bForceRepaint && pDC)
+                        RedrawCell(row, col, pDC);
+                    else
+                        InvalidateCellRect(row, col);
+                }
             }
     }
     //    TRACE(_T("%d cells selected.\n"), m_SelectedCellMap.GetCount());
-
+    
     if (pDC != NULL)
         ReleaseDC(pDC);
 }
@@ -2320,7 +2327,7 @@ COleDataSource* CGridCtrl::CopyTextFromGrid()
                 str += _T("\t");
         }
         if (row != Selection.GetMaxRow())
-            str += _T("\n");
+            str += _T("\r\n");
 
         sf.Write(T2A(str.GetBuffer(1)), str.GetLength());
         str.ReleaseBuffer();
@@ -2361,7 +2368,7 @@ BOOL CGridCtrl::PasteTextToGrid(CCellID cell, COleDataObject* pDataObject,
 
     // CF_TEXT is ANSI text, so we need to allocate a char* buffer
     // to hold this.
-    LPSTR szBuffer = new char[::GlobalSize(hmem)];
+    LPTSTR szBuffer = new TCHAR[::GlobalSize(hmem)];
     if (!szBuffer)
         return FALSE;
 
@@ -2608,7 +2615,7 @@ void CGridCtrl::OnEditCut()
     COleDataSource* pSource = CopyTextFromGrid();
     if (!pSource)
         return;
-
+    
     pSource->SetClipboard();
     CutSelectedText();
 }
@@ -3694,7 +3701,7 @@ int CGridCtrl::InsertColumn(LPCTSTR strHeading,
     CATCH (CMemoryException, e)
     {
         e->ReportError();
-        return FALSE;
+        return -1;
     }
     END_CATCH
 
@@ -3764,7 +3771,7 @@ int CGridCtrl::InsertRow(LPCTSTR strHeading, int nRow /* = -1 */)
     CATCH (CMemoryException, e)
     {
         e->ReportError();
-        return FALSE;
+        return -1;
     }
     END_CATCH
 
@@ -4143,10 +4150,6 @@ CCellID CGridCtrl::GetNextItem(CCellID& cell, int nFlags) const
 // Sorts on a given column using the cell text
 BOOL CGridCtrl::SortTextItems(int nCol, BOOL bAscending, LPARAM data /* = 0 */)
 {
-    SetSortColumn(nCol);
-    SetSortAscending(bAscending);
-    ResetSelectedRange();
-    SetFocusCell(-1, - 1);
     return CGridCtrl::SortItems(pfnCellTextCompare, nCol, bAscending, data);
 }
 
@@ -4158,16 +4161,11 @@ void CGridCtrl::SetCompareFunction(PFNLVCOMPARE pfnCompare)
 // Sorts on a given column using the cell text and using the specified comparison
 // function
 BOOL CGridCtrl::SortItems(int nCol, BOOL bAscending, LPARAM data /* = 0 */)
-{
-    SetSortColumn(nCol);
-    SetSortAscending(bAscending);
-    ResetSelectedRange();
-    SetFocusCell(-1, - 1);
-
-        if (m_pfnCompare == NULL)
-                return CGridCtrl::SortItems(pfnCellTextCompare, nCol, bAscending, data);
-        else
-            return CGridCtrl::SortItems(m_pfnCompare, nCol, bAscending, data);
+{    
+    if (m_pfnCompare == NULL)
+        return CGridCtrl::SortItems(pfnCellTextCompare, nCol, bAscending, data);
+    else
+        return CGridCtrl::SortItems(m_pfnCompare, nCol, bAscending, data);
 }
 
 // Sorts on a given column using the supplied compare function (see CListCtrl::SortItems)
@@ -5151,54 +5149,34 @@ void CGridCtrl::EnsureVisible(int nRow, int nCol)
 {
     if (!m_bAllowDraw)
         return;
-
+    
     CRect rectWindow;
-    /*
-    // set the scroll to the approximate position of row (Nigel Page-Jones)
-    int nPos = (int)((float)nRow / GetRowCount() * 1000);
-    float fPos = (float)nPos / 1000;
-    SCROLLINFO scrollInfo;
-    GetScrollInfo(SB_VERT, &scrollInfo);
-    scrollInfo.nPos = (int)(scrollInfo.nMax * fPos);
-    SetScrollInfo(SB_VERT, &scrollInfo, FALSE);
-
-    GetClientRect(rectWindow);
-
-    // redraw cells    if necessary (Nigel Page-Jones)
-    CCellID idTopLeft = GetTopleftNonFixedCell(FALSE);
-    CCellID idNewTopLeft = GetTopleftNonFixedCell(TRUE);
-    if (idNewTopLeft != idTopLeft)
-    {
-        rectWindow.top = GetFixedRowHeight();
-        InvalidateRect(rectWindow);
-    }
-    */
-
+    
     // We are gonna send some scroll messages, which will steal the focus
     // from it's rightful owner. Squirrel it away ourselves so we can give
     // it back. (Damir)
     CWnd* pFocusWnd = GetFocus();
-
+    
     CCellRange VisibleCells = GetVisibleNonFixedCellRange();
-
+    
     int right = nCol - VisibleCells.GetMaxCol();
     int left  = VisibleCells.GetMinCol() - nCol;
     int down  = nRow - VisibleCells.GetMaxRow();
     int up    = VisibleCells.GetMinRow() - nRow;
-
+    
     int iColumnStart;
     int iRowStart;
-
+    
     iColumnStart = VisibleCells.GetMaxCol() + 1;
     while( right > 0 )
     {
         if( GetColumnWidth( iColumnStart ) > 0 )
             SendMessage( WM_HSCROLL, SB_LINERIGHT, 0 );
-
+        
         right--;
         iColumnStart++;
     }
-
+    
     iColumnStart = VisibleCells.GetMinCol() - 1;
     while( left > 0 )
     {
@@ -5207,7 +5185,7 @@ void CGridCtrl::EnsureVisible(int nRow, int nCol)
         left--;
         iColumnStart--;
     }
-
+    
     iRowStart = VisibleCells.GetMaxRow() + 1;
     while( down > 0 )
     {
@@ -5216,7 +5194,7 @@ void CGridCtrl::EnsureVisible(int nRow, int nCol)
         down--;
         iRowStart++;
     }
-
+    
     iRowStart = VisibleCells.GetMinRow() - 1;
     while( up > 0 )
     {
@@ -5225,46 +5203,48 @@ void CGridCtrl::EnsureVisible(int nRow, int nCol)
         up--;
         iRowStart--;
     }
-
+    
     // Move one more if we only see a snall bit of the cell
     CRect rectCell;
     if (!GetCellRect(nRow, nCol, rectCell))
     {
-                if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
-                        pFocusWnd->SetFocus();
+        if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
+            pFocusWnd->SetFocus();
         return;
     }
-
+    
     GetClientRect(rectWindow);
-
+    
     // The previous fix was fixed properly by Martin Richter <martin.richter@grutzeck.de>
     while (rectCell.right > rectWindow.right
-           && rectCell.left > GetFixedColumnWidth())
+        && rectCell.left > GetFixedColumnWidth()
+        && IsVisibleHScroll() ) // Junlin Xu: added to prevent infinite loop $$LR$$
     {
         SendMessage(WM_HSCROLL, SB_LINERIGHT, 0);
         if (!GetCellRect(nRow, nCol, rectCell))
         {
-                        if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
-                                pFocusWnd->SetFocus();
+            if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
+                pFocusWnd->SetFocus();
             return;
         }
     }
-
+    
     while (rectCell.bottom > rectWindow.bottom
-           && rectCell.top > GetFixedRowHeight())
+        && rectCell.top > GetFixedRowHeight()
+        && IsVisibleVScroll()) // Junlin Xu: added to prevent infinite loop $$LR$$
     {
         SendMessage(WM_VSCROLL, SB_LINEDOWN, 0);
         if (!GetCellRect(nRow, nCol, rectCell))
         {
-                        if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
-                                pFocusWnd->SetFocus();
+            if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
+                pFocusWnd->SetFocus();
             return;
         }
     }
-
+    
     // restore focus to whoever owned it
-        if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
-                pFocusWnd->SetFocus();
+    if (pFocusWnd && ::IsWindow(pFocusWnd->GetSafeHwnd()))
+        pFocusWnd->SetFocus();
 }
 
 BOOL CGridCtrl::IsCellEditable(CCellID &cell) const
@@ -5515,7 +5495,7 @@ void CGridCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
 #endif
             m_MouseMode = MOUSE_NOTHING;
         }
-
+        
         if (m_MouseMode == MOUSE_NOTHING)
         {
             CGridCellBase* pCell = NULL;
@@ -5529,7 +5509,7 @@ void CGridCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
                 if (pCell)
                     pCell->OnMouseOver();
             }
-
+            
 #ifndef GRIDCONTROL_NO_TITLETIPS
             // Titletips anyone? anyone?
             if (m_bTitleTips)
@@ -5539,21 +5519,21 @@ void CGridCtrl::OnMouseMove(UINT /*nFlags*/, CPoint point)
                 {
                     LPCTSTR szTipText = pCell->GetTipText();
                     if (!m_bRMouseButtonDown
-                                                && szTipText && szTipText[0]
+                        && szTipText && szTipText[0]
                         && !pCell->IsEditing()
                         && GetCellRect( idCurrentCell.row, idCurrentCell.col, &TextRect)
                         && pCell->GetTipTextRect( &TextRect)
                         && GetCellRect(idCurrentCell.row, idCurrentCell.col, CellRect) )
                     {
-                                                TRACE0("Showing TitleTip\n");
-                                                m_TitleTip.Show(TextRect, pCell->GetTipText(),  0, CellRect,
-                                        pCell->GetFont(),  GetTitleTipTextClr(), GetTitleTipBackClr());
+                        TRACE0("Showing TitleTip\n");
+                        m_TitleTip.Show(TextRect, pCell->GetTipText(), 0, CellRect,
+                            pCell->GetFont(),  GetTitleTipTextClr(), GetTitleTipBackClr());
                     }
                 }
             }
 #endif
         }
-
+        
         m_LastMousePoint = point;
         return;
     }
@@ -5775,18 +5755,18 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
     // EFW - Bug Fix
     m_TitleTip.Hide();  // hide any titletips
 #endif
-
+    
     // TRACE0("CGridCtrl::OnLButtonDown\n");
     // CWnd::OnLButtonDown(nFlags, point);
-
+    
     SetFocus();
-
+    
     m_bLMouseButtonDown   = TRUE;
     m_LeftClickDownPoint = point;
     m_LeftClickDownCell  = GetCellFromPt(point);
     if (!IsValid(m_LeftClickDownCell))
         return;
-
+    
     // If the SHIFT key is not down, then the start of the selection area should be the
     // cell just clicked. Otherwise, keep the previous selection-start-cell so the user
     // can add to their previous cell selections in an intuitive way. If no selection-
@@ -5798,14 +5778,14 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
         if (!IsValid(m_SelectionStartCell))
             m_SelectionStartCell = m_idCurrentCell;
     }
-
+    
     EndEditing();
-
+    
     // tell the cell about it
     CGridCellBase* pCell = GetCell(m_LeftClickDownCell.row, m_LeftClickDownCell.col);
     if (pCell)
         pCell->OnClickDown(GetPointClicked( m_LeftClickDownCell.row, m_LeftClickDownCell.col, point));
-
+    
     // Clicked in the text area? Only then will cell selection work
     BOOL bInTextArea = FALSE;
     if (pCell)
@@ -5817,7 +5797,7 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
             bInTextArea = rectCell.PtInRect(point);
         }
     }
-
+    
     // If the user clicks on the current cell, then prepare to edit it.
     // (If the user moves the mouse, then dragging occurs)
     if (m_LeftClickDownCell == m_idCurrentCell &&
@@ -5831,10 +5811,11 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
     // (If the user moves the mouse, then dragging occurs)
     else if (IsCellSelected(m_LeftClickDownCell))
     {
+        SetFocusCell(m_LeftClickDownCell);  //Yogurt $$LR$$
+
         // If control is pressed then unselect the cell or row (depending on the list mode)
         if (nFlags & MK_CONTROL)
-        {
-            SetFocusCell(m_LeftClickDownCell);
+        {            
             if (GetListMode())
                 SelectRows(m_LeftClickDownCell, TRUE, FALSE);
             else
@@ -5847,25 +5828,25 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
 #endif
     }
     else if (m_MouseMode != MOUSE_OVER_COL_DIVIDE &&
-             m_MouseMode != MOUSE_OVER_ROW_DIVIDE)
+        m_MouseMode != MOUSE_OVER_ROW_DIVIDE)
     {
-                if (m_LeftClickDownCell.row >= GetFixedRowCount() &&
-                        m_LeftClickDownCell.col >= GetFixedColumnCount())
-                {
+        if (m_LeftClickDownCell.row >= GetFixedRowCount() &&
+            m_LeftClickDownCell.col >= GetFixedColumnCount())
+        {
             SetFocusCell(m_LeftClickDownCell.row, m_LeftClickDownCell.col);
-                }
-                else
-                        SetFocusCell(-1, -1);
-
-                //Don't set focus on any cell if the user clicked on a fixed cell - David Pritchard
+        }
+        else
+            SetFocusCell(-1, -1);
+        
+        //Don't set focus on any cell if the user clicked on a fixed cell - David Pritchard
         //if (GetRowCount() > GetFixedRowCount() &&
         //    GetColumnCount() > GetFixedColumnCount())
         //    SetFocusCell(max(m_LeftClickDownCell.row, m_nFixedRows),
         //                 max(m_LeftClickDownCell.col, m_nFixedCols));
     }
-
+    
     SetCapture();
-
+    
     if (m_MouseMode == MOUSE_NOTHING)
     {
         if (m_bAllowColumnResize && MouseOverColumnResizeArea(point))
@@ -5894,11 +5875,11 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
         //    m_MouseMode = MOUSE_NOTHING;
         //}
     }
-
+    
     if (m_MouseMode == MOUSE_OVER_COL_DIVIDE) // sizing column
     {
         m_MouseMode = MOUSE_SIZING_COL;
-
+        
         // Kludge for if we are over the last column...
         if (GetColumnWidth(GetColumnCount()-1) < m_nResizeCaptureRange)
         {
@@ -5907,36 +5888,36 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
             if (abs(point.x - VisRect.right) < m_nResizeCaptureRange)
                 m_LeftClickDownCell.col = GetColumnCount()-1;
         }
-
+        
         CPoint start;
         if (!GetCellOrigin(0, m_LeftClickDownCell.col, &start))
             return;
-
+        
         if( !m_bHiddenColUnhide)
         {
             //  ignore columns that are hidden and look left towards first visible column
             BOOL bLookForVisible = TRUE;
             BOOL bIsCellRightBorder = point.x - start.x >= m_nResizeCaptureRange;
-
+            
             if( bIsCellRightBorder
                 && m_LeftClickDownCell.col + 1 >= GetColumnCount() )
             {
                 // clicked on last column's right border
-
+                
                 // if last column is visible, don't do anything
                 if( m_LeftClickDownCell.col >= 0)
                     bLookForVisible = FALSE;
             }
-
+            
             if( bLookForVisible)
             {
                 // clicked on column divider other than last right border
                 BOOL bFoundVisible = FALSE;
                 int iOffset = 1;
-
+                
                 if( bIsCellRightBorder)
                     iOffset = 0;
-
+                
                 while( m_LeftClickDownCell.col - iOffset >= 0)
                 {
                     if( GetColumnWidth( m_LeftClickDownCell.col - iOffset) > 0)
@@ -5950,19 +5931,19 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
                     return;
             }
         }
-
-
+        
+        
         CRect rect;
         GetClientRect(rect);
         CRect invertedRect(point.x, rect.top, point.x + 2, rect.bottom);
-
+        
         CDC* pDC = GetDC();
         if (pDC)
         {
             pDC->InvertRect(&invertedRect);
             ReleaseDC(pDC);
         }
-
+        
         // If we clicked to the right of the colimn divide, then reset the click-down cell
         // as the cell to the left of the column divide - UNLESS we clicked on the last column
         // and the last column is teensy (kludge fix)
@@ -5975,13 +5956,13 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
                     return;
             }
         }
-
-                // Allow a cell resize width no greater than that which can be viewed within
-                // the grid itself
-                int nMaxCellWidth = rect.Width()-GetFixedColumnWidth();
+        
+        // Allow a cell resize width no greater than that which can be viewed within
+        // the grid itself
+        int nMaxCellWidth = rect.Width()-GetFixedColumnWidth();
         rect.left  = start.x + 1;
-                rect.right = rect.left + nMaxCellWidth;
-
+        rect.right = rect.left + nMaxCellWidth;
+        
         ClientToScreen(rect);
 #ifndef _WIN32_WCE_NO_CURSOR
         ClipCursor(rect);
@@ -5990,7 +5971,7 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
     else if (m_MouseMode == MOUSE_OVER_ROW_DIVIDE) // sizing row
     {
         m_MouseMode = MOUSE_SIZING_ROW;
-
+        
         // Kludge for if we are over the last column...
         if (GetRowHeight(GetRowCount()-1) < m_nResizeCaptureRange)
         {
@@ -5999,36 +5980,36 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
             if (abs(point.y - VisRect.bottom) < m_nResizeCaptureRange)
                 m_LeftClickDownCell.row = GetRowCount()-1;
         }
-
+        
         CPoint start;
         if (!GetCellOrigin(m_LeftClickDownCell, &start))
             return;
-
+        
         if( !m_bHiddenRowUnhide)
         {
             //  ignore rows that are hidden and look up towards first visible row
             BOOL bLookForVisible = TRUE;
             BOOL bIsCellBottomBorder = point.y - start.y >= m_nResizeCaptureRange;
-
+            
             if( bIsCellBottomBorder
                 && m_LeftClickDownCell.row + 1 >= GetRowCount() )
             {
                 // clicked on last row's bottom border
-
+                
                 // if last row is visible, don't do anything
                 if( m_LeftClickDownCell.row >= 0)
                     bLookForVisible = FALSE;
             }
-
+            
             if( bLookForVisible)
             {
                 // clicked on row divider other than last bottom border
                 BOOL bFoundVisible = FALSE;
                 int iOffset = 1;
-
+                
                 if( bIsCellBottomBorder)
                     iOffset = 0;
-
+                
                 while( m_LeftClickDownCell.row - iOffset >= 0)
                 {
                     if( GetRowHeight( m_LeftClickDownCell.row - iOffset) > 0)
@@ -6042,18 +6023,18 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
                     return;
             }
         }
-
+        
         CRect rect;
         GetClientRect(rect);
         CRect invertedRect(rect.left, point.y, rect.right, point.y + 2);
-
+        
         CDC* pDC = GetDC();
         if (pDC)
         {
             pDC->InvertRect(&invertedRect);
             ReleaseDC(pDC);
         }
-
+        
         // If we clicked below the row divide, then reset the click-down cell
         // as the cell above the row divide - UNLESS we clicked on the last row
         // and the last row is teensy (kludge fix)
@@ -6066,51 +6047,51 @@ void CGridCtrl::OnLButtonDown(UINT nFlags, CPoint point)
                     return;
             }
         }
-
-                int nMaxCellHeight = rect.Height()-GetFixedRowHeight();
+        
+        int nMaxCellHeight = rect.Height()-GetFixedRowHeight();
         rect.top = start.y + 1;
-                rect.bottom = rect.top + nMaxCellHeight;
-
+        rect.bottom = rect.top + nMaxCellHeight;
+        
         ClientToScreen(rect);
-
+        
 #ifndef _WIN32_WCE_NO_CURSOR
         ClipCursor(rect);
 #endif
     }
     else
 #ifndef GRIDCONTROL_NO_DRAGDROP
-    if (m_MouseMode != MOUSE_PREPARE_DRAG) // not sizing or editing -- selecting
+        if (m_MouseMode != MOUSE_PREPARE_DRAG) // not sizing or editing -- selecting
 #endif
-    {
-            SendMessageToParent(m_LeftClickDownCell.row, m_LeftClickDownCell.col, GVN_SELCHANGING);
-
-        // If Ctrl pressed, save the current cell selection. This will get added
-        // to the new cell selection at the end of the cell selection process
-        m_PrevSelectedCellMap.RemoveAll();
-        if (nFlags & MK_CONTROL)
         {
-            for (POSITION pos = m_SelectedCellMap.GetStartPosition(); pos != NULL; )
+            SendMessageToParent(m_LeftClickDownCell.row, m_LeftClickDownCell.col, GVN_SELCHANGING);
+            
+            // If Ctrl pressed, save the current cell selection. This will get added
+            // to the new cell selection at the end of the cell selection process
+            m_PrevSelectedCellMap.RemoveAll();
+            if (nFlags & MK_CONTROL)
             {
-                DWORD key;
-                CCellID cell;
-                m_SelectedCellMap.GetNextAssoc(pos, key, (CCellID&)cell);
-                m_PrevSelectedCellMap.SetAt(key, cell);
+                for (POSITION pos = m_SelectedCellMap.GetStartPosition(); pos != NULL; )
+                {
+                    DWORD key;
+                    CCellID cell;
+                    m_SelectedCellMap.GetNextAssoc(pos, key, (CCellID&)cell);
+                    m_PrevSelectedCellMap.SetAt(key, cell);
+                }
+            }
+            
+            if (m_LeftClickDownCell.row < GetFixedRowCount())
+                OnFixedRowClick(m_LeftClickDownCell);
+            else if (m_LeftClickDownCell.col < GetFixedColumnCount())
+                OnFixedColumnClick(m_LeftClickDownCell);
+            else
+            {
+                m_MouseMode = m_bListMode? MOUSE_SELECT_ROW : MOUSE_SELECT_CELLS;
+                OnSelecting(m_LeftClickDownCell);
+                
+                m_nTimerID = SetTimer(WM_LBUTTONDOWN, m_nTimerInterval, 0);
             }
         }
-
-        if (m_LeftClickDownCell.row < GetFixedRowCount())
-            OnFixedRowClick(m_LeftClickDownCell);
-        else if (m_LeftClickDownCell.col < GetFixedColumnCount())
-            OnFixedColumnClick(m_LeftClickDownCell);
-        else
-        {
-            m_MouseMode = m_bListMode? MOUSE_SELECT_ROW : MOUSE_SELECT_CELLS;
-            OnSelecting(m_LeftClickDownCell);
-
-            m_nTimerID = SetTimer(WM_LBUTTONDOWN, m_nTimerInterval, 0);
-        }
-    }
-    m_LastMousePoint = point;
+        m_LastMousePoint = point;
 }
 
 void CGridCtrl::OnLButtonUp(UINT nFlags, CPoint point)
@@ -6403,7 +6384,7 @@ void CGridCtrl::OnBeginPrinting(CDC *pDC, CPrintInfo *pInfo)
 
     // Create the printer font
     int nFontSize = -10;
-    CString strFontName = "Arial";
+    CString strFontName = _T("Arial");
     m_PrinterFont.CreateFont(nFontSize, 0,0,0, FW_NORMAL, 0,0,0, DEFAULT_CHARSET,
                              OUT_CHARACTER_PRECIS, CLIP_CHARACTER_PRECIS, DEFAULT_QUALITY,
                              DEFAULT_PITCH | FF_DONTCARE, strFontName);

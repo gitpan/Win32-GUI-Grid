@@ -54,8 +54,11 @@ CGridCellCheck::CGridCellCheck() : CGridCell()
 CSize CGridCellCheck::GetCellExtent(CDC* pDC)
 {
     // Using SM_CXHSCROLL as a guide to the size of the checkbox
-        int nWidth = GetSystemMetrics(SM_CXHSCROLL) + 2*GetMargin();
-        return CGridCell::GetCellExtent(pDC) + CSize(nWidth, nWidth);
+    int nWidth = GetSystemMetrics(SM_CXHSCROLL) + 2*GetMargin();  // Yogurt $$LR$$
+    CSize	cellSize = CGridCell::GetCellExtent(pDC);
+    cellSize.cx += nWidth;
+    cellSize.cy = max (cellSize.cy, nWidth);
+    return  cellSize;
 }
 
 // i/o:  i=dims of cell rect; o=dims of text rect
@@ -98,16 +101,20 @@ BOOL CGridCellCheck::Draw(CDC* pDC, int nRow, int nCol, CRect rect,  BOOL bErase
 
 void CGridCellCheck::OnClick(CPoint PointCellRelative)
 {
-        // PointCellRelative is relative to the topleft of the cell. Convert to client coords
-        PointCellRelative += m_Rect.TopLeft();
+    // PointCellRelative is relative to the topleft of the cell. Convert to client coords
+    PointCellRelative += m_Rect.TopLeft();
+    
+    CCellID cell = GetGrid()->GetCellFromPt (PointCellRelative);
+    if (!GetGrid()->IsCellEditable (cell))
+        return;
 
-        // GetCheckPlacement returns the checkbox dimensions in client coords. Only check/
-        // uncheck if the user clicked in the box
-        if (GetCheckPlacement().PtInRect(PointCellRelative))
-        {
-                m_bChecked = !m_bChecked;
-                GetGrid()->InvalidateRect(m_Rect);
-        }
+    // GetCheckPlacement returns the checkbox dimensions in client coords. Only check/
+    // uncheck if the user clicked in the box
+    if (GetCheckPlacement().PtInRect(PointCellRelative))
+    {
+        m_bChecked = !m_bChecked;
+        GetGrid()->InvalidateRect(m_Rect);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -136,25 +143,31 @@ BOOL CGridCellCheck::GetCheck()
 // Returns the dimensions and placement of the checkbox in client coords.
 CRect CGridCellCheck::GetCheckPlacement()
 {
-        int nWidth = GetSystemMetrics(SM_CXHSCROLL);
-        CRect place = m_Rect + CSize(GetMargin(), GetMargin());
+    int nWidth = GetSystemMetrics(SM_CXHSCROLL);
+    CRect place = m_Rect + CSize(GetMargin(), GetMargin());
     place.right = place.left + nWidth;
     place.bottom = place.top + nWidth;
-
-        /* for centering
-        int nDiff = (place.Width() - nWidth)/2;
-        if (nDiff > 0)
-        {
-                place.left += nDiff;
-                place.right = place.left + nWidth;
-        }
-        nDiff = (place.Height() - nWidth)/2;
-        if (nDiff > 0)
-        {
-                place.top += nDiff;
-                place.bottom = place.top + nWidth;
-        }
+    
+    /* for centering
+    int nDiff = (place.Width() - nWidth)/2;
+    if (nDiff > 0)
+    {
+    place.left += nDiff;
+    place.right = place.left + nWidth;
+    }
+    nDiff = (place.Height() - nWidth)/2;
+    if (nDiff > 0)
+    {
+    place.top += nDiff;
+    place.bottom = place.top + nWidth;
+    }
     */
+    // Yogurt $$LR$$
+    if (m_Rect.Height() < nWidth + 2 * (int)GetMargin() ) 
+    {
+        place.top    = m_Rect.top + (m_Rect.Height() - nWidth) / 2;
+        place.bottom = place.top + nWidth;	
+    }    
 
-        return place;
+    return place;
 }

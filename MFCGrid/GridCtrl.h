@@ -774,6 +774,7 @@ protected:
     afx_msg LRESULT OnGetFont(WPARAM hFont, LPARAM lParam);
     afx_msg LRESULT OnImeChar(WPARAM wCharCode, LPARAM lParam);
     afx_msg void OnEndInPlaceEdit(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg LRESULT OnCustomPrint(WPARAM, LPARAM);
     DECLARE_MESSAGE_MAP()
 
     enum eMouseModes { MOUSE_NOTHING, MOUSE_SELECT_ALL, MOUSE_SELECT_COL, MOUSE_SELECT_ROW,

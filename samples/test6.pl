@@ -1,6 +1,7 @@
 #! perl -w
 #
 # Test multiple Grid instance
+# noflicker Win32::GUI support
 #
 use strict;
 use Win32::GUI;
@@ -12,6 +13,7 @@ my $Window = new Win32::GUI::Window (
     -pos     => [100, 100],
     -size    => [400, 400],
     -name     => "Window",
+    -noflicker => 1,
 ) or die "new Window";
 
 # Grid Window
